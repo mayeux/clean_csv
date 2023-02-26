@@ -1,39 +1,42 @@
-const fs = require(fs)
-const createCsvParser = require('csv-parser')
-const readSteam = fs.createReadStream('data.csv')
-const writeStream = fs.createWriteStream('fichier_filtre2.csv')
-const csvParser = createCsvParser()
+const csv = require("csv-parser");
+const fs = require("fs");
+const results = [];
+const writeStream = fs.createWriteStream("result.csv");
 
-    .pipe(csv())
-    .on('data', (data) => {
-        // Ajout ID auto-incrémenté
-        data.ID = results.length + 1;
-        results.push(data);
-    })
-    .on('end', () => {
-        // Écrire les enregistrements modifiés 
-        
-        for (let i = 0; i < results.length; i++) {
-            const values = Object.values(results[i]);
-            ws.write(values.join(',') + '\n');
-        }
-        ws.end();
-    });
+fs.createReadStream("data.csv")
+  .pipe(csv())
+  .on("data", (data) => {
+    // Ajout ID auto-incrémenté
+    data.id = results.length + 1;
+    results.push(data);
+  })
+  .on("end", () => {
+    console.log(
+      results.map((element) => {
+        // console.log("ELEMENT ===========", element);
+        return {
+          id: element.id,
+          Period: element.Period,
+          Data_value: element.Data_value,
+          Series_title_2: element.Series_title_2,
+        };
+      })
+    );
+  });
 
-parser.transform = function (record, callback) {
-    const cleanRecord = record
-        .filter((field) => field.trim !== '') // supprime les lignes vides
-        .filter((_, index) => index !== 1, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14) // supprime les colonnes voulues
-    // .map((field) => field.trim())  supprime les espaces en début et fin de chaîne  
-    if (cleanRecord.length === 4) {
-        callback(null, record)
-    } else {
-        callback(null, cleanRecord)
-    }
-
+function sendMessage(message, writableStream) {
+  const encoder = new TextEncoder();
+  const encoded = encoder.encode(message, { stream: true });
+  encoded.forEach((chunk) => {
+    writableStream.ready
+      .then(() => writableStream.write(chunk))
+      .then(() => console.log("Chunk written to sink."))
+      .catch((err) => console.error("Chunk error:", err));
+  });
+  // check
+  // before closing the writer.
+  writableStream.ready
+    .then(async () => await writableStream.close())
+    .then(() => console.log("All chunks written"))
+    .catch((err) => console.error("Stream error:", err));
 }
-
-readSteam
-    .pipe(parser)
-    .pipe(writeStream)
-
